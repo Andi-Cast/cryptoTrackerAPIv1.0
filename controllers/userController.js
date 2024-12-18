@@ -26,25 +26,45 @@ const getPortfolio = async (req, res) => {
   const { userId } = req.params;
 
   try {
-      const user = await User.findById(userId).populate(
-        {
-          path: 'portfolio',
-          select: '_id user name image quantity currentMarketValue'
-        })
-        .exec();
+    const user = await User.findById(userId).populate(
+      {
+        path: 'portfolio',
+        select: '_id user name image quantity costBasis currentMarketValue'
+      }
+    ).exec();
 
-      if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (!user) return res.status(404).json({ error: 'User not found.' });
 
-      const updatedPortfolio = await Promise.all(
-        user.portfolio.map(async (asset) => await updateLiveCurrentMarketValue(asset))
-      );
+    let totalMarketValue = 0;
+    let totalCostBasis = 0;
 
-      res.status(200).json({ portfolio: updatedPortfolio });
+    const updatedPortfolio = await Promise.all(
+      user.portfolio.map(async (asset) => {
+        const updatedAsset = await updateLiveCurrentMarketValue(asset);
+
+        // Accumulate the market value for portfolio total
+        console.log(`current market value: ${updatedAsset.currentMarketValue}`);
+        totalMarketValue += updatedAsset.currentMarketValue || 0;
+        console.log(`cost basis: ${asset.costBasis}`);
+        totalCostBasis += updatedAsset.costBasis || 0;
+
+        return updatedAsset;
+      })
+    );
+
+    // Update the user's portfolioMarketValue with the calculated total
+    user.portfolioMarketValue = parseFloat(totalMarketValue.toFixed(2));
+    user.portfolioCostBasis = parseFloat(totalCostBasis.toFixed(2));
+
+    await user.save();
+
+    res.status(200).json({ portfolio: updatedPortfolio, portfolioMarketValue: totalMarketValue, portfolioCostBasis: totalCostBasis});
   } catch (error) {
-      console.error('Error retrieving portfolio: ', error.message);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Error retrieving portfolio: ', error.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 const addTrade = async (req, res) => {
   const { userId } = req.params; 
@@ -77,6 +97,7 @@ const addTrade = async (req, res) => {
       asset.pnl = parseFloat((asset.currentMarketValue - asset.costBasis).toFixed(2));
 
       await asset.save();
+
       return res.status(200).json({ message: 'Trade added successfully', asset });
     } else {
       // Asset does not exist: create new asset

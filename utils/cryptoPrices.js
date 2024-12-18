@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Asset = require('../model/Asset');
+const User = require('../model/User');
 
 const getLiveAssetPrice = async (coin) => {
     try {
@@ -103,7 +104,6 @@ const updateLiveCurrentMarketValue = async (asset) => {
         return asset; // Return asset without updates
     }
 };
-
 
 module.exports = { 
     getLiveAssetPrice, 

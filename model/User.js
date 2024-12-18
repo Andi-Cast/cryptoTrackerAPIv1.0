@@ -31,6 +31,14 @@ const userSchema = new mongoose.Schema({
         Admin: Number
     },
     portfolio: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Asset'}],
+    portfolioMarketValue: {
+        type: Number,
+        default: 0
+    },
+    portfolioCostBasis: {
+        type: Number,
+        default: 0
+    },
     refreshToken: [String]
 });
 
