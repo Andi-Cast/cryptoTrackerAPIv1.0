@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
+const credentials = require('./middleware/credentials');
+const cors = require('cors');
+const corsOptions = require('./config/corsOptions');
 const verifyJWT = require('./middleware/verifyJWT');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
@@ -9,6 +11,13 @@ const connectDB = require('./config/dbConn');
 connectDB();
 
 const app = express();
+
+// Handle options credentials check - before CORS!
+// and fetch cookies credentials requirement
+app.use(credentials);
+
+// Cross Origin Resource Sharing
+app.use(cors(corsOptions));
 
 app.use(express.urlencoded({ extended: false }));
 

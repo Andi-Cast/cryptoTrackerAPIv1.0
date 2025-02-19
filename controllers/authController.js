@@ -14,7 +14,7 @@ const handleLogin = async (req, res) => {
 
     //check if user in db
     if(match) {
-        const roles = Object.values(foundUser.roles);
+        const roles = Object.values(foundUser.roles).filter(Boolean);
         
         const accessToken = jwt.sign(
             { 
@@ -59,8 +59,8 @@ const handleLogin = async (req, res) => {
         const result = await foundUser.save();
 
         //httpOnly doesn't make data available for JS attacks
-        res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'None',  maxAge: 24 * 60 * 60 * 1000 }); //, secure: true
-        res.json({ accessToken });
+        res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'None',  maxAge: 24 * 60 * 60 * 1000, secure: true }); //, secure: true
+        res.json({ roles, accessToken, userId: foundUser._id });
     
     } else {
         res.sendStatus(401);
